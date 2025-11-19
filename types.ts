@@ -1,3 +1,4 @@
+
 export interface Product {
   id: number;
   name: string;
@@ -22,6 +23,7 @@ export interface ChatMessage {
 export interface User {
   name: string;
   email: string;
+  isAdmin?: boolean;
 }
 
 export enum Category {

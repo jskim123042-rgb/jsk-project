@@ -1,19 +1,21 @@
+
 import React, { useState, useEffect } from 'react';
-import { Search, ShoppingBag, Menu, Instagram, Facebook, Twitter, ChevronRight, LogIn, User as UserIcon, LogOut } from 'lucide-react';
+import { Search, ShoppingBag, Menu, Instagram, Facebook, Twitter, ChevronRight, LogIn, User as UserIcon, LogOut, Shield, X } from 'lucide-react';
 import { Product, CartItem, Category, User } from './types';
 import { ProductCard } from './components/ProductCard';
 import { CartDrawer } from './components/CartDrawer';
 import { AIChat } from './components/AIChat';
 import { AuthModal } from './components/AuthModal';
+import { AdminDashboard } from './components/AdminDashboard';
 
-// Mock Data
-const MOCK_PRODUCTS: Product[] = [
+// Initial Mock Data
+const INITIAL_PRODUCTS: Product[] = [
   {
     id: 1,
     name: "베이직 오버핏 코튼 셔츠",
     price: 45000,
     category: Category.CLOTHING,
-    image: "https://picsum.photos/id/1059/400/400",
+    image: "https://picsum.photos/id/1059/400/600",
     description: "편안한 착용감과 세련된 실루엣을 자랑하는 고밀도 코튼 셔츠입니다. 사계절 내내 활용 가능한 필수 아이템입니다.",
     tags: ["셔츠", "오버핏", "데일리룩"]
   },
@@ -22,7 +24,7 @@ const MOCK_PRODUCTS: Product[] = [
     name: "노이즈 캔슬링 헤드폰 Pro",
     price: 289000,
     category: Category.ELECTRONICS,
-    image: "https://picsum.photos/id/3/400/400",
+    image: "https://picsum.photos/id/3/400/600",
     description: "압도적인 몰입감을 선사하는 프리미엄 무선 헤드폰. 40시간 연속 재생과 급속 충전을 지원합니다.",
     tags: ["음향기기", "헤드폰", "테크"]
   },
@@ -31,7 +33,7 @@ const MOCK_PRODUCTS: Product[] = [
     name: "미니멀 가죽 크로스백",
     price: 125000,
     category: Category.ACCESSORIES,
-    image: "https://picsum.photos/id/1080/400/400",
+    image: "https://picsum.photos/id/1080/400/600",
     description: "천연 소가죽으로 제작된 미니멀한 디자인의 크로스백. 어떤 스타일에도 자연스럽게 어울립니다.",
     tags: ["가방", "가죽", "패션"]
   },
@@ -40,7 +42,7 @@ const MOCK_PRODUCTS: Product[] = [
     name: "모던 세라믹 화병 세트",
     price: 68000,
     category: Category.HOME,
-    image: "https://picsum.photos/id/225/400/400",
+    image: "https://picsum.photos/id/225/400/600",
     description: "공간의 분위기를 바꿔주는 유니크한 쉐입의 세라믹 화병입니다. 꽃 없이 오브제로 두어도 아름답습니다.",
     tags: ["인테리어", "소품", "화병"]
   },
@@ -49,7 +51,7 @@ const MOCK_PRODUCTS: Product[] = [
     name: "빈티지 워싱 데님 자켓",
     price: 89000,
     category: Category.CLOTHING,
-    image: "https://picsum.photos/id/1069/400/400",
+    image: "https://picsum.photos/id/1069/400/600",
     description: "자연스러운 워싱과 탄탄한 데님 소재가 돋보이는 자켓. 클래식한 디자인으로 유행을 타지 않습니다.",
     tags: ["자켓", "데님", "아우터"]
   },
@@ -58,7 +60,7 @@ const MOCK_PRODUCTS: Product[] = [
     name: "스마트 워치 시리즈 5",
     price: 350000,
     category: Category.ELECTRONICS,
-    image: "https://picsum.photos/id/119/400/400",
+    image: "https://picsum.photos/id/119/400/600",
     description: "건강 관리부터 알림 확인까지. 당신의 일상을 스마트하게 관리해주는 최고의 파트너.",
     tags: ["시계", "스마트워치", "운동"]
   },
@@ -67,7 +69,7 @@ const MOCK_PRODUCTS: Product[] = [
     name: "실버 체인 레이어드 목걸이",
     price: 32000,
     category: Category.ACCESSORIES,
-    image: "https://picsum.photos/id/1062/400/400",
+    image: "https://picsum.photos/id/1062/400/600",
     description: "두 가지 굵기의 체인이 레이어드된 감각적인 디자인. 심플한 룩에 포인트가 되어줍니다.",
     tags: ["주얼리", "목걸이", "실버"]
   },
@@ -76,13 +78,16 @@ const MOCK_PRODUCTS: Product[] = [
     name: "소프트 터치 무드등",
     price: 42000,
     category: Category.HOME,
-    image: "https://picsum.photos/id/20/400/400",
+    image: "https://picsum.photos/id/20/400/600",
     description: "따뜻한 빛으로 아늑한 침실을 만들어주는 무드등. 터치로 밝기 조절이 가능합니다.",
     tags: ["조명", "인테리어", "침실"]
   }
 ];
 
+type ViewMode = 'store' | 'admin';
+
 const App: React.FC = () => {
+  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [selectedCategory, setSelectedCategory] = useState<Category | '전체'>(Category.ALL);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -92,9 +97,10 @@ const App: React.FC = () => {
   // Auth State
   const [user, setUser] = useState<User | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('store');
 
   // Filter Products
-  const filteredProducts = MOCK_PRODUCTS.filter(product => {
+  const filteredProducts = products.filter(product => {
     const matchesCategory = selectedCategory === Category.ALL || product.category === selectedCategory;
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           product.tags.some(tag => tag.includes(searchQuery));
@@ -130,74 +136,112 @@ const App: React.FC = () => {
   const handleLogin = (userData: User) => {
     setUser(userData);
     setIsAuthModalOpen(false);
+    if (userData.isAdmin) {
+      setViewMode('admin');
+    }
   };
 
   const handleLogout = () => {
     if (window.confirm('로그아웃 하시겠습니까?')) {
         setUser(null);
+        setViewMode('store');
     }
   };
 
+  // Product Management Logic (Admin)
+  const handleAddProduct = (newProduct: Product) => {
+    setProducts(prev => [newProduct, ...prev]);
+  };
+
+  const handleUpdateProduct = (updatedProduct: Product) => {
+    setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+  };
+
+  const handleDeleteProduct = (id: number) => {
+    setProducts(prev => prev.filter(p => p.id !== id));
+  };
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col font-sans text-gray-900">
       {/* Navigation */}
-      <nav className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100">
+      <nav className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-gray-100 transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <Menu className="h-6 w-6 text-gray-500 md:hidden cursor-pointer" />
-              <a href="#" className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Lumina.
-              </a>
-            </div>
-
-            <div className="hidden md:flex items-center bg-gray-100 rounded-full px-4 py-2 w-96">
-              <Search size={18} className="text-gray-400" />
-              <input 
-                type="text" 
-                placeholder="검색어를 입력하세요..." 
-                className="bg-transparent border-none focus:ring-0 w-full ml-2 text-sm text-gray-700"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="relative cursor-pointer" onClick={() => setIsCartOpen(true)}>
-                <ShoppingBag className="h-6 w-6 text-gray-600 hover:text-indigo-600 transition-colors" />
-                {cart.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                    {cart.length}
-                  </span>
-                )}
+          <div className="flex justify-between items-center h-20">
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-3">
+                <Menu className="h-6 w-6 text-gray-900 md:hidden cursor-pointer" />
+                <a 
+                  href="#" 
+                  onClick={(e) => {
+                      e.preventDefault();
+                      setViewMode('store');
+                  }}
+                  className="text-2xl font-serif font-bold tracking-tighter text-gray-900"
+                >
+                  Lumina.
+                </a>
               </div>
+              
+              <div className="hidden md:flex items-center space-x-6 text-sm font-medium text-gray-500">
+                {user?.isAdmin && (
+                    <button 
+                        onClick={() => setViewMode(viewMode === 'admin' ? 'store' : 'admin')}
+                        className={`transition-colors flex items-center gap-1 ${viewMode === 'admin' ? 'text-black font-bold' : 'hover:text-black'}`}
+                    >
+                        <Shield size={14} />
+                        ADMIN
+                    </button>
+                )}
+                <a href="#" onClick={() => setViewMode('store')} className={`transition-colors ${viewMode === 'store' ? 'text-black' : 'hover:text-black'}`}>SHOP</a>
+                <a href="#" className="hover:text-black transition-colors">COLLECTIONS</a>
+                <a href="#" className="hover:text-black transition-colors">ABOUT</a>
+              </div>
+            </div>
+
+            {viewMode === 'store' && (
+                <div className="hidden md:flex items-center bg-gray-50 rounded-none px-4 py-2 w-80 border-b border-transparent focus-within:border-black transition-colors">
+                <Search size={16} className="text-gray-400" />
+                <input 
+                    type="text" 
+                    placeholder="Search for items..." 
+                    className="bg-transparent border-none focus:ring-0 w-full ml-2 text-sm text-gray-900 placeholder-gray-400 font-medium"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                </div>
+            )}
+
+            <div className="flex items-center gap-5">
+              {viewMode === 'store' && (
+                <div className="relative cursor-pointer group" onClick={() => setIsCartOpen(true)}>
+                    <ShoppingBag className="h-5 w-5 text-gray-900 group-hover:scale-110 transition-transform duration-300" />
+                    {cart.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                        {cart.length}
+                    </span>
+                    )}
+                </div>
+              )}
               
               {/* Auth Button */}
               {user ? (
                 <div 
-                    className="flex items-center gap-2 pl-4 border-l border-gray-200 cursor-pointer group relative"
-                    onClick={handleLogout}
+                    className="flex items-center gap-3 pl-5 border-l border-gray-200 cursor-pointer group relative"
                 >
-                    <div className="text-right hidden sm:block">
-                        <p className="text-xs text-gray-500">환영합니다</p>
-                        <p className="text-sm font-bold text-gray-900 leading-none">{user.name}님</p>
+                    <div className="text-right hidden sm:block" onClick={handleLogout}>
+                        <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">{user.isAdmin ? 'Administrator' : 'Welcome'}</p>
+                        <p className="text-sm font-bold text-gray-900 leading-none">{user.name}</p>
                     </div>
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-md ring-2 ring-white">
+                    <div className="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center font-bold text-xs ring-2 ring-white shadow-sm">
                         {user.name[0]}
-                    </div>
-                    <div className="absolute top-full right-0 mt-2 w-32 bg-white rounded-xl shadow-xl border border-gray-100 p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                        <div className="text-xs text-center text-gray-500 flex items-center justify-center gap-1">
-                             <LogOut size={12} /> 로그아웃
-                        </div>
                     </div>
                 </div>
               ) : (
                 <button 
                     onClick={() => setIsAuthModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900 text-white text-sm font-medium hover:bg-indigo-600 transition-all shadow-sm hover:shadow-md"
+                    className="text-sm font-bold text-gray-900 hover:text-gray-600 transition-colors flex items-center gap-1"
                 >
-                    <LogIn size={16} />
-                    <span className="hidden sm:inline">로그인/가입</span>
+                    <LogIn size={18} />
                 </button>
               )}
             </div>
@@ -205,87 +249,133 @@ const App: React.FC = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <div className="relative bg-gray-900 text-white py-20 lg:py-32 overflow-hidden">
-        <div className="absolute inset-0 opacity-40">
-            <img src="https://picsum.photos/id/6/1600/600" alt="Hero Background" className="w-full h-full object-cover" />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center lg:text-left">
-          <h1 className="text-4xl lg:text-6xl font-bold mb-6 tracking-tight leading-tight">
-            당신의 라이프스타일을 위한<br/>
-            <span className="text-indigo-400">모든 영감</span>
-          </h1>
-          <p className="text-lg lg:text-xl text-gray-300 mb-8 max-w-2xl">
-            Lumina Market은 단순한 쇼핑을 넘어 새로운 라이프스타일을 제안합니다.
-            AI 큐레이션을 통해 당신에게 딱 맞는 아이템을 발견하세요.
-          </p>
-          <button 
-            onClick={() => {
-                const element = document.getElementById('products-section');
-                element?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="px-8 py-3 bg-white text-gray-900 font-bold rounded-full hover:bg-indigo-50 transition-colors inline-flex items-center gap-2"
-          >
-            쇼핑 시작하기 <ChevronRight size={18} />
-          </button>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <main id="products-section" className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
-        {/* Categories */}
-        <div className="flex overflow-x-auto pb-4 mb-8 gap-2 scrollbar-hide">
-          {[Category.ALL, Category.CLOTHING, Category.ELECTRONICS, Category.HOME, Category.ACCESSORIES].map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                selectedCategory === cat 
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' 
-                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* Product Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filteredProducts.length > 0 ? (
-             filteredProducts.map(product => (
-              <ProductCard 
-                key={product.id} 
-                product={product} 
-                onOpenModal={setSelectedProduct}
-                onAddToCart={addToCart}
-              />
-            ))
-          ) : (
-            <div className="col-span-full text-center py-20 text-gray-500">
-                <p className="text-xl">검색 결과가 없습니다.</p>
+      {viewMode === 'admin' && user?.isAdmin ? (
+          <AdminDashboard 
+            products={products}
+            onAddProduct={handleAddProduct}
+            onUpdateProduct={handleUpdateProduct}
+            onDeleteProduct={handleDeleteProduct}
+          />
+      ) : (
+        <>
+        {/* Hero Section */}
+        <div className="relative bg-gray-50 h-[600px] w-full overflow-hidden">
+            <div className="absolute inset-0">
+                <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop" alt="Fashion Hero" className="w-full h-full object-cover grayscale opacity-90" />
             </div>
-          )}
+            <div className="absolute inset-0 bg-black/10"></div>
+            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center">
+            <div className="max-w-xl animate-in fade-in slide-in-from-bottom-8 duration-1000">
+                <span className="inline-block px-3 py-1 bg-white/90 backdrop-blur text-xs font-bold tracking-widest uppercase mb-4">New Collection 2024</span>
+                <h1 className="text-5xl md:text-7xl font-serif font-bold text-white mb-6 leading-tight drop-shadow-lg">
+                Timeless <br/>
+                <span className="italic font-light">Elegance.</span>
+                </h1>
+                <p className="text-lg text-gray-100 mb-8 max-w-md font-light leading-relaxed drop-shadow-md">
+                Discover our curated selection of minimalist essentials designed for the modern lifestyle.
+                </p>
+                <button 
+                onClick={() => {
+                    const element = document.getElementById('products-section');
+                    element?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-8 py-4 bg-white text-black font-bold hover:bg-black hover:text-white transition-all duration-300 inline-flex items-center gap-2 shadow-xl"
+                >
+                EXPLORE NOW
+                </button>
+            </div>
+            </div>
         </div>
-      </main>
+
+        {/* Main Content */}
+        <main id="products-section" className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 w-full">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-4">
+                <div>
+                    <h2 className="text-3xl font-serif font-bold mb-2">Curated Picks</h2>
+                    <p className="text-gray-500 font-light">엄선된 프리미엄 컬렉션을 만나보세요.</p>
+                </div>
+                
+                {/* Categories */}
+                <div className="flex overflow-x-auto pb-2 gap-8 scrollbar-hide border-b border-gray-100 w-full md:w-auto">
+                {[Category.ALL, Category.CLOTHING, Category.ELECTRONICS, Category.HOME, Category.ACCESSORIES].map((cat) => (
+                    <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`pb-2 text-sm font-bold uppercase tracking-wider whitespace-nowrap transition-all relative ${
+                        selectedCategory === cat 
+                        ? 'text-black' 
+                        : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                    >
+                    {cat}
+                    {selectedCategory === cat && (
+                        <span className="absolute bottom-0 left-0 w-full h-0.5 bg-black"></span>
+                    )}
+                    </button>
+                ))}
+                </div>
+            </div>
+
+            {/* Product Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
+            {filteredProducts.length > 0 ? (
+                filteredProducts.map(product => (
+                <ProductCard 
+                    key={product.id} 
+                    product={product} 
+                    onOpenModal={setSelectedProduct}
+                    onAddToCart={addToCart}
+                />
+                ))
+            ) : (
+                <div className="col-span-full text-center py-32 text-gray-400 font-light">
+                    <p className="text-xl">No products found.</p>
+                </div>
+            )}
+            </div>
+        </main>
+        </>
+      )}
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-100 py-12">
+      <footer className="bg-black text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Lumina Market</h2>
-              <p className="text-sm text-gray-500">
-                © 2024 Lumina Market. All rights reserved.<br/>
-                Seoul, Korea
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+            <div className="col-span-1 md:col-span-2">
+              <h2 className="text-2xl font-serif font-bold mb-6">Lumina.</h2>
+              <p className="text-gray-400 text-sm leading-relaxed max-w-xs mb-6">
+                We curate the finest items for your lifestyle. 
+                Quality, minimalism, and sustainability are at the core of our philosophy.
               </p>
+              <div className="flex gap-6 text-gray-400">
+                <Instagram size={20} className="hover:text-white cursor-pointer transition-colors" />
+                <Facebook size={20} className="hover:text-white cursor-pointer transition-colors" />
+                <Twitter size={20} className="hover:text-white cursor-pointer transition-colors" />
+              </div>
             </div>
-            <div className="flex gap-6 text-gray-400">
-              <Instagram className="hover:text-indigo-600 cursor-pointer transition-colors" />
-              <Facebook className="hover:text-indigo-600 cursor-pointer transition-colors" />
-              <Twitter className="hover:text-indigo-600 cursor-pointer transition-colors" />
+            
+            <div>
+                <h3 className="text-sm font-bold uppercase tracking-widest mb-6">Shop</h3>
+                <ul className="space-y-4 text-sm text-gray-400">
+                    <li><a href="#" className="hover:text-white transition-colors">New Arrivals</a></li>
+                    <li><a href="#" className="hover:text-white transition-colors">Best Sellers</a></li>
+                    <li><a href="#" className="hover:text-white transition-colors">Sale</a></li>
+                </ul>
             </div>
+
+            <div>
+                <h3 className="text-sm font-bold uppercase tracking-widest mb-6">Support</h3>
+                <ul className="space-y-4 text-sm text-gray-400">
+                    <li><a href="#" className="hover:text-white transition-colors">FAQ</a></li>
+                    <li><a href="#" className="hover:text-white transition-colors">Shipping & Returns</a></li>
+                    <li><a href="#" className="hover:text-white transition-colors">Contact Us</a></li>
+                </ul>
+            </div>
+          </div>
+          <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-xs text-gray-500">
+              © 2024 Lumina Market. All rights reserved.
+            </p>
           </div>
         </div>
       </footer>
@@ -309,47 +399,41 @@ const App: React.FC = () => {
 
       {/* Quick View Modal */}
       {selectedProduct && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedProduct(null)}>
-            <div className="bg-white rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row" onClick={e => e.stopPropagation()}>
-                <div className="w-full md:w-1/2 aspect-square bg-gray-100">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedProduct(null)}>
+            <div className="bg-white w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col md:flex-row animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                <div className="w-full md:w-1/2 h-[400px] md:h-[600px] bg-gray-100">
                     <img src={selectedProduct.image} alt={selectedProduct.name} className="w-full h-full object-cover" />
                 </div>
-                <div className="w-full md:w-1/2 p-8 flex flex-col">
-                    <div className="flex justify-between items-start mb-4">
-                         <div>
-                            <span className="text-sm text-indigo-600 font-bold tracking-wide uppercase">{selectedProduct.category}</span>
-                            <h2 className="text-2xl font-bold text-gray-900 mt-1">{selectedProduct.name}</h2>
-                         </div>
-                         <button onClick={() => setSelectedProduct(null)} className="text-gray-400 hover:text-gray-600">
-                             <span className="sr-only">Close</span>
-                             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                         </button>
-                    </div>
-                    
-                    <p className="text-gray-600 leading-relaxed mb-6">
-                        {selectedProduct.description}
-                    </p>
-                    
-                    <div className="flex flex-wrap gap-2 mb-8">
-                        {selectedProduct.tags.map(tag => (
-                            <span key={tag} className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">#{tag}</span>
-                        ))}
+                <div className="w-full md:w-1/2 p-10 flex flex-col relative">
+                     <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 text-gray-400 hover:text-black transition-colors">
+                        <X size={24} />
+                     </button>
+
+                     <div className="mb-auto">
+                        <span className="text-xs font-bold tracking-widest text-gray-400 uppercase mb-2 block">{selectedProduct.category}</span>
+                        <h2 className="text-3xl font-serif font-bold text-gray-900 mb-4">{selectedProduct.name}</h2>
+                        <div className="text-2xl font-light text-gray-900 mb-8">₩{selectedProduct.price.toLocaleString()}</div>
+                        
+                        <p className="text-gray-600 leading-relaxed mb-8 font-light">
+                            {selectedProduct.description}
+                        </p>
+
+                        <div className="flex flex-wrap gap-2 mb-8">
+                            {selectedProduct.tags.map(tag => (
+                                <span key={tag} className="px-3 py-1 border border-gray-200 text-gray-500 text-xs uppercase tracking-wider">#{tag}</span>
+                            ))}
+                        </div>
                     </div>
 
-                    <div className="mt-auto">
-                        <div className="flex items-end gap-2 mb-4">
-                             <span className="text-3xl font-bold text-gray-900">₩{selectedProduct.price.toLocaleString()}</span>
-                        </div>
-                        <button 
-                            onClick={() => {
-                                addToCart(selectedProduct);
-                                setSelectedProduct(null);
-                            }}
-                            className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors"
-                        >
-                            장바구니 담기
-                        </button>
-                    </div>
+                    <button 
+                        onClick={() => {
+                            addToCart(selectedProduct);
+                            setSelectedProduct(null);
+                        }}
+                        className="w-full py-4 bg-black text-white font-bold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                    >
+                        ADD TO CART
+                    </button>
                 </div>
             </div>
         </div>
